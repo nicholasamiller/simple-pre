@@ -1,0 +1,1 @@
+C# implementation of simple forward chaining production rules engine from [Martin Fowler's Domain Specific Languages book](https://www.martinfowler.com/books/dsl.html).
