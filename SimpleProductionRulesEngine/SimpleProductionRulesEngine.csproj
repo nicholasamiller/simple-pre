@@ -5,7 +5,8 @@
     <PackageId>SimpleProductionRulesEngine</PackageId>
     <Version>0.1.0</Version>
     <Authors>Nicholas Miller</Authors>
-    <Company>Gov Law Tech</Company> 
+    <Company>Gov Law Tech</Company>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
   
 
