@@ -3,10 +3,14 @@
   <PropertyGroup>
    <TargetFramework>netstandard2.1</TargetFramework>
     <PackageId>SimpleProductionRulesEngine</PackageId>
-    <Version>0.1.0</Version>
+    <Description>Simple production rules engine</Description>
+    <PackageTags>rules engine</PackageTags>
+    <RepositoryUrl>https://github.com/nicholasamiller/simple-pre</RepositoryUrl>
+    <Version>0.1.2</Version>
     <Authors>Nicholas Miller</Authors>
     <Company>Gov Law Tech</Company>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
   
 
