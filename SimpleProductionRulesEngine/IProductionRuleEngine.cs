@@ -7,6 +7,7 @@ namespace ProductionRulesEngine
     {
         T Run(T context);
 
+        IEnumerable<IProductionRule<T>> UnActivatedRules { get; }
         IEnumerable<RuleRunLog<T>> Log { get; }
     }
 }

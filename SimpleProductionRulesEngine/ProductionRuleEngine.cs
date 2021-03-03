@@ -16,6 +16,8 @@ namespace SimpleProductionRulesEngine
 
         public IEnumerable<RuleRunLog<T>> Log => _log;
 
+        public IEnumerable<IProductionRule<T>> UnActivatedRules => _unactivatedRules;
+
         public ProductionRuleEngine(IEnumerable<IProductionRule<T>> rules)
         {
             _ruleBase = rules.ToList();
@@ -78,6 +80,5 @@ namespace SimpleProductionRulesEngine
             var deserializeSettings = new JsonSerializerSettings { ObjectCreationHandling = ObjectCreationHandling.Replace };
             return JsonConvert.DeserializeObject<T>(JsonConvert.SerializeObject(source), deserializeSettings);
         }
-
     }
 }
