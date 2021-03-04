@@ -20,22 +20,21 @@ namespace WizardConsoleShellTest
             {
                 QuestionText = "Shining?",
                 QuestionType = typeof(bool),
-                ReflectAnswer = (a, c) => c.IsSunShining = a
+                ReflectAnswer = (a, c) => c.IsSunShining = (bool)a
             };
 
             var screen2 = new SimpleWizard.QuestionScreen<Context>()
             {
                 QuestionText = "Likes sun?",
                 QuestionType = typeof(bool),
-                ReflectAnswer = (a, c) => c.PersonLikesSun = a
+                ReflectAnswer = (a, c) => c.PersonLikesSun = (bool)a
             };
 
-            var edge = new SimpleWizard.Edge<Context>() { Source = screen1, Target = screen2, TraverseCondition = c => true };
+            var edge = new ScreenLink<Context>() {Source = screen1, Target = screen2,  TraverseCondition = c => c.IsSunShining == true };
 
-            var tree = SimpleWizard.WizardManager<Context>.BuildTree(new[] { screen1, screen2 }, new[] { edge });
-            var wm = new WizardManager<Context>(tree,context);
+            var wm = new WizardManager<Context>(new[] { screen1, screen2 }, new[] { edge });
 
-            var cc = new ConsoleWizardClient<Context>(wm);
+            var cc = new ConsoleWizardClient<Context>(wm, context);
             cc.Start();
 
         }

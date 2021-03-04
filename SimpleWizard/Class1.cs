@@ -38,10 +38,12 @@ namespace SimpleWizard
 
     public class ConsoleWizardClient<TContext>
     {
+        private readonly TContext context;
 
-        public ConsoleWizardClient(WizardManager<TContext> wizardManager)
+        public ConsoleWizardClient(WizardManager<TContext> wizardManager, TContext context)
         {
             WizardManager = wizardManager;
+            this.context = context;
         }
         
         public WizardManager<TContext> WizardManager { get; }
@@ -60,11 +62,11 @@ namespace SimpleWizard
                 Console.WriteLine(nextScreen.QuestionText);
                 var answer = Console.ReadLine();
                 var answerTyped = ConvertStringAnswerToType(answer, nextScreen.QuestionType);
-                nextScreen =  nextScreen.ReflectAnswer(answerTyped, WizardManager.Context);
+                nextScreen = WizardManager.GetNextQuestion(answerTyped,context);
             }
         }
 
-        private dynamic ConvertStringAnswerToType(string answer, Type targetType)
+        private object ConvertStringAnswerToType(string answer, Type targetType)
         {
             if (targetType == typeof(bool))
             {
@@ -76,24 +78,24 @@ namespace SimpleWizard
         
     }
 
+    public class ScreenLink<TContext>
+    {
+        public QuestionScreen<TContext> Source { get; set; }
+        public QuestionScreen<TContext> Target {get;set;}
+        public Predicate<TContext> TraverseCondition { get; set; }
+    }
+
     public class WizardManager<TContext>
     {
 
-        // build the tree
-        // run the rules engine
-        // set finish conditions
-
-
-        public TContext Context { get; private set; }
-        
         public Node<TContext> StartingNode { get; private set; }
-        public Node<TContext> CurrentNode { get; private set; }
+        private Node<TContext> _currentNode;
 
-        public WizardManager(Node<TContext> rootNode, TContext context)
+        public WizardManager(IEnumerable<QuestionScreen<TContext>> questionScreens, IEnumerable<ScreenLink<TContext>> screenLinks)
         {
-            CurrentNode = rootNode;
-
-            Context = context;
+            var rootNode = BuildTree(questionScreens, screenLinks);
+            StartingNode = rootNode;
+            _currentNode = StartingNode;
         }
 
         public QuestionScreen<TContext> GetFirstScreen()
@@ -101,13 +103,16 @@ namespace SimpleWizard
             return StartingNode.QuestionScreen;
         }
 
-        public static Node<TContext> BuildTree(IEnumerable<QuestionScreen<TContext>> questionScreens, IEnumerable<Edge<TContext>> edges)
+        private static Node<TContext> BuildTree(IEnumerable<QuestionScreen<TContext>> questionScreens, IEnumerable<ScreenLink<TContext>> screenLinks)
         {
             var nodes = questionScreens.Select(qs => new Node<TContext> { QuestionScreen = qs }).ToList();
-            foreach (var e in edges)
+            foreach (var l in screenLinks)
             {
-                var source = nodes.FirstOrDefault(n => n.QuestionScreen == e.Source);
-                var target = nodes.FirstOrDefault(n => n.QuestionScreen == e.Target);
+                var source = nodes.FirstOrDefault(n => n.QuestionScreen == l.Source);
+                var target = nodes.FirstOrDefault(n => n.QuestionScreen == l.Target);
+                var edge = new Edge<TContext>() { Source = source, Target = target, TraverseCondition = l.TraverseCondition };
+                source.AddOutEdge(edge);
+                target.AddInEdge(edge);
             }
 
             var rootNodes = nodes.Where(n => !n.InEdges.Any());
@@ -119,13 +124,13 @@ namespace SimpleWizard
             return rootNodes.Single();
         }
 
-        public QuestionScreen<TContext> GetNextQuestion(dynamic answerToLastQuestion)
+        public QuestionScreen<TContext> GetNextQuestion(object answerToLastQuestion, TContext context)
         {
-            CurrentNode.QuestionScreen.ReflectAnswer(answerToLastQuestion, Context);
-            var traversibleOutEdges = CurrentNode.OutEdges.Where(e => e.TraverseCondition(Context));
+            _currentNode.QuestionScreen.ReflectAnswer(answerToLastQuestion, context);
+            var traversibleOutEdges = _currentNode.OutEdges.Where(e => e.TraverseCondition(context));
             if (traversibleOutEdges.Count() > 1)
             {
-                throw new WizardException("Mulitple traversible out edges for " + CurrentNode);
+                throw new WizardException("Mulitple traversible out edges for " + _currentNode);
             }
             if (!traversibleOutEdges.Any())
             {
@@ -133,17 +138,16 @@ namespace SimpleWizard
             }
             else
             {
-                return traversibleOutEdges.Single().Target;
+                _currentNode = traversibleOutEdges.Single().Target;
+                return _currentNode.QuestionScreen;
             }
         }
-
-      
-
-
     }
 
+    
     public class Node<TContext>
     {
+                
         private List<Edge<TContext>> _InEdges = new List<Edge<TContext>>();
         private List<Edge<TContext>> _OutEdges = new List<Edge<TContext>>();
         
@@ -158,8 +162,8 @@ namespace SimpleWizard
         }
         
         public QuestionScreen<TContext> QuestionScreen { get; set; }
-        public IEnumerable<Edge<TContext>> OutEdges { get; set; }
-        public IEnumerable<Edge<TContext>> InEdges { get; set; }
+        public IEnumerable<Edge<TContext>> OutEdges => _OutEdges;
+        public IEnumerable<Edge<TContext>> InEdges => _InEdges;
     }
 
     public class QuestionScreen<TContext>
@@ -167,13 +171,13 @@ namespace SimpleWizard
         public string QuestionText { get; set; }
         
         public Type QuestionType { get; set; }
-        public Action<dynamic,TContext> ReflectAnswer { get; set; }
+        public Action<object,TContext> ReflectAnswer { get; set; }
     }
 
     public class Edge<TContext>
     {
-        public QuestionScreen<TContext> Source { get; set; }
-        public QuestionScreen<TContext> Target { get; set; }
+        public Node<TContext> Source { get; set; }
+        public Node<TContext> Target { get; set; }
         public Predicate<TContext> TraverseCondition { get; set; }
     }
 
