@@ -9,7 +9,7 @@ namespace SimpleProductionRulesEngine
     public class ProductionRuleEngine<T> : IProductionRuleEngine<T>
     {
 
-        readonly List<IProductionRule<T>> _unactivatedRules = new List<IProductionRule<T>>();
+        private List<IProductionRule<T>> _unactivatedRules = new List<IProductionRule<T>>();
         List<IProductionRule<T>> _agenda = new List<IProductionRule<T>>();
         private IList<IProductionRule<T>> _ruleBase;
         private IList<RuleRunLog<T>> _log = new List<RuleRunLog<T>>();
@@ -21,7 +21,7 @@ namespace SimpleProductionRulesEngine
         public ProductionRuleEngine(IEnumerable<IProductionRule<T>> rules)
         {
             _ruleBase = rules.ToList();
-            _unactivatedRules.AddRange(_ruleBase);
+            _unactivatedRules = rules.ToList();
         }
 
 
@@ -34,6 +34,9 @@ namespace SimpleProductionRulesEngine
                 FireRulesOnAgenda(wm);
                 ActivateRules(wm);
             }
+
+            _unactivatedRules = _ruleBase.ToList();
+
             return wm;
         }
 
