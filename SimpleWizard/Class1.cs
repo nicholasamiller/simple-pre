@@ -61,18 +61,30 @@ namespace SimpleWizard
             {
                 Console.WriteLine(nextScreen.QuestionText);
                 var answer = Console.ReadLine();
-                var answerTyped = ConvertStringAnswerToType(answer, nextScreen.QuestionType);
-                nextScreen = WizardManager.GetNextQuestion(answerTyped,context);
+                while (ConvertStringAnswerToType(answer, nextScreen.QuestionType) == null)
+                {
+                    Console.WriteLine("Try again.");
+                    answer = Console.ReadLine();
+                    
+                }
+                nextScreen = WizardManager.GetNextQuestion(ConvertStringAnswerToType(answer, nextScreen.QuestionType), context);
             }
         }
 
         private object ConvertStringAnswerToType(string answer, Type targetType)
         {
-            if (targetType == typeof(bool))
+            try
             {
-                return Convert.ToBoolean(answer);
+                if (targetType == typeof(bool))
+                {
+                    return Convert.ToBoolean(answer);
+                }
+                return answer;
             }
-            return answer;
+            catch
+            {
+                return null;
+            }
         }
 
         
@@ -90,12 +102,14 @@ namespace SimpleWizard
 
         public Node<TContext> StartingNode { get; private set; }
         private Node<TContext> _currentNode;
+        private readonly Action<TContext> onContextUpdated;
 
-        public WizardManager(IEnumerable<QuestionScreen<TContext>> questionScreens, IEnumerable<ScreenLink<TContext>> screenLinks)
+        public WizardManager(IEnumerable<QuestionScreen<TContext>> questionScreens, IEnumerable<ScreenLink<TContext>> screenLinks,Action<TContext> onContextUpdated)
         {
             var rootNode = BuildTree(questionScreens, screenLinks);
             StartingNode = rootNode;
             _currentNode = StartingNode;
+            this.onContextUpdated = onContextUpdated;
         }
 
         public QuestionScreen<TContext> GetFirstScreen()
@@ -127,6 +141,7 @@ namespace SimpleWizard
         public QuestionScreen<TContext> GetNextQuestion(object answerToLastQuestion, TContext context)
         {
             _currentNode.QuestionScreen.ReflectAnswer(answerToLastQuestion, context);
+            onContextUpdated(context); 
             var traversibleOutEdges = _currentNode.OutEdges.Where(e => e.TraverseCondition(context));
             if (traversibleOutEdges.Count() > 1)
             {
